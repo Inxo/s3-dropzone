@@ -47,7 +47,7 @@ func (s *Sync) Init() error {
 	return nil
 }
 
-func (s *Sync) UploadToS3(filename string) (string, error) {
+func (s *Sync) UploadToS3(filename string, expire time.Duration) (string, error) {
 	// Create S3 service client
 	svc := s.SVC
 
@@ -73,11 +73,7 @@ func (s *Sync) UploadToS3(filename string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	duration, err := time.ParseDuration("+24h")
-	if err != nil {
-		return "", err
-	}
-	url, err := s.generateDownloadURL(filename, duration)
+	url, err := s.generateDownloadURL(filename, expire)
 	if err != nil {
 		return "", err
 	}

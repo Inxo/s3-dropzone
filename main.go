@@ -15,6 +15,8 @@ import (
 	"golang.design/x/clipboard"
 	"log"
 	"os"
+	"strings"
+	"time"
 )
 
 func main() {
@@ -147,7 +149,20 @@ func main() {
 		}
 		filePathLabel.SetText(fmt.Sprintf("Dropped file path: %s", filePath))
 
-		urlUploaded, err := sync.UploadToS3(filePath)
+		expireIn := os.Getenv("EXPIRE_IN")
+		if len(expireIn) == 0 {
+			expireIn = "+7200h"
+		}
+		if !strings.HasPrefix(expireIn, "+") {
+			expireIn = "+" + expireIn
+		}
+
+		duration, err := time.ParseDuration(expireIn)
+		if err != nil {
+			return
+		}
+
+		urlUploaded, err := sync.UploadToS3(filePath, duration)
 		if err != nil {
 			dialog.ShowError(err, myWindow)
 			return
