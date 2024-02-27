@@ -134,14 +134,30 @@ func main() {
 		tabs,
 	))
 
+	sync := Sync{}
+	err = sync.Init()
+	if err != nil {
+		dialog.ShowError(err, myWindow)
+	}
+
 	myWindow.SetOnDropped(func(pos fyne.Position, url []fyne.URI) {
 		filePath := url[0].String()
+		if len(url) > 1 {
+			// generate page
+		}
 		filePathLabel.SetText(fmt.Sprintf("Dropped file path: %s", filePath))
-		err := filePathLabel.SetURLFromString("https://inxo.ru")
+
+		urlUploaded, err := sync.UploadToS3(filePath)
 		if err != nil {
 			dialog.ShowError(err, myWindow)
 			return
 		}
+		err = filePathLabel.SetURLFromString(urlUploaded)
+		if err != nil {
+			dialog.ShowError(err, myWindow)
+			return
+		}
+		filePathLabel.SetText("Download link")
 	})
 	myWindow.ShowAndRun()
 }
