@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"dropZone/short"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -63,7 +64,9 @@ func main() {
 			fyne.NewMenuItem("Show", func() {
 				myWindow.Show()
 			}))
+
 		desk.SetSystemTrayMenu(m)
+		desk.SetSystemTrayIcon(theme.StorageIcon())
 	}
 
 	myWindow.Resize(fyne.Size{
@@ -97,7 +100,7 @@ func main() {
 		clipboard.Write(clipboard.FmtText, []byte(filePathLabel.URL.String()))
 	})
 
-	myWindow.SetIcon(theme.AccountIcon())
+	myWindow.SetIcon(theme.StorageIcon())
 
 	// Создаем дроп-зону для файла
 	dropContainer := container.New(
@@ -167,7 +170,12 @@ func main() {
 			dialog.ShowError(err, myWindow)
 			return
 		}
-		err = filePathLabel.SetURLFromString(urlUploaded)
+		urlShort, err := short.NewLink(urlUploaded)
+		if err != nil {
+			dialog.ShowError(err, myWindow)
+			return
+		}
+		err = filePathLabel.SetURLFromString(urlShort)
 		if err != nil {
 			dialog.ShowError(err, myWindow)
 			return
