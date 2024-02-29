@@ -1,6 +1,6 @@
 # File Drop App
 
-File Drop App is a simple Golang application with a graphical interface using the Fyne library. The application provides a file drop zone, and after dragging a file into this zone, it displays the path to that file.
+File Drop App is a simple Golang application with a graphical interface using the Fyne library. The application provides a file drop zone, and after dragging a file into this zone, it automatically uploads the file to your personal S3 storage and generates a shareable link for easy sharing.
 
 ## Installation
 
