@@ -31,4 +31,4 @@ Fyne - A UI toolkit and app API written in Go.
 
 ## License
 
-This project is licensed under the [MIT License](LICENCE.md).
+This project is licensed under the [MIT License](LICENSE.md).
