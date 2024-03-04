@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fyne.io/fyne/v2/widget"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -23,7 +25,7 @@ func (s *Sync) Init() error {
 
 	// Validate environment variables
 	if bucketName == "" {
-		log.Fatal(".env file not loaded or missing required variables")
+		//log.Fatal(".env file not loaded or missing required variables")
 		return nil
 	}
 
@@ -48,6 +50,7 @@ func (s *Sync) Init() error {
 }
 
 func (s *Sync) UploadToS3(filename string, expire time.Duration) (string, error) {
+	s.Init()
 	// Create S3 service client
 	svc := s.SVC
 
@@ -64,11 +67,29 @@ func (s *Sync) UploadToS3(filename string, expire time.Duration) (string, error)
 		}
 	}(file)
 
+	// Get the MIME type
+	//buffer := make([]byte, 512) // Read the first 512 bytes to detect the content type
+	//_, err = file.Read(buffer)
+	//if err != nil {
+	//	return "", err
+	//}
+
+	//contentType := http.DetectContentType(buffer)
+
+	fileInfo, _ := file.Stat()
+	size := fileInfo.Size()
+	buffer := make([]byte, size) // read file content to buffer
+
+	file.Read(buffer)
+	fileBytes := bytes.NewReader(buffer)
+	contentType := http.DetectContentType(buffer)
 	// Upload the file to S3
 	_, err = svc.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(s.BucketName),
-		Key:    aws.String(filename),
-		Body:   file,
+		Bucket:        aws.String(s.BucketName),
+		Key:           aws.String(filename),
+		Body:          fileBytes,
+		ContentLength: aws.Int64(size),
+		ContentType:   aws.String(contentType),
 	})
 	if err != nil {
 		return "", err

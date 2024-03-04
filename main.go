@@ -140,10 +140,6 @@ func main() {
 	))
 
 	sync := Sync{}
-	err = sync.Init()
-	if err != nil {
-		dialog.ShowError(err, myWindow)
-	}
 
 	myWindow.SetOnDropped(func(pos fyne.Position, url []fyne.URI) {
 		filePath := url[0].String()
