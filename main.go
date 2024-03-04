@@ -119,7 +119,7 @@ func main() {
 	if len(os.Args) > 1 {
 		filePath := os.Args[1]
 		filePathLabel.SetText(fmt.Sprintf("File path from command line argument: %s", filePath))
-		err := filePathLabel.SetURLFromString("https://inxo.ru")
+		err := filePathLabel.SetURLFromString("https://s.inxo.ru")
 		if err != nil {
 			dialog.ShowError(err, myWindow)
 			return

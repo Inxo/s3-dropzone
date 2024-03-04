@@ -17,7 +17,7 @@ func (s Shorter) GetLink(urlUploaded string) (string, error) {
 	}
 	shorterService := os.Getenv("SHORTEN_SERVICE")
 	if len(shorterService) == 0 {
-		shorterService = "http://s.inxo.ru/shorten"
+		shorterService = "https://s.inxo.ru/shorten"
 	}
 	response, err := http.PostForm(shorterService, values)
 	if err != nil {
