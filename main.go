@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"dropZone/short"
 	"fmt"
 	"fyne.io/fyne/v2"
@@ -12,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/joho/godotenv"
 	"golang.design/x/clipboard"
 	"os"
 	"strings"
@@ -20,49 +18,38 @@ import (
 )
 
 func main() {
-	myApp := app.New()
+	myApp := app.NewWithID("ru.inxo.drop.app")
+	myApp.SetIcon(resourceIconPng)
 	wd := myApp.Storage().RootURI().String()
+
 	err := os.MkdirAll(wd, os.ModePerm)
 	if err != nil {
 		println(err)
 	}
 	// Load environment variables
-	err = godotenv.Load(wd + "/.env")
-	if err != nil {
-		// create default
-		err := os.Setenv("AWS_ACCESS_KEY_ID", "tw6kCfjGMh75do0R9I6SAG8JyvuuKI80")
-		if err != nil {
-			return
-		}
-		err = os.Setenv("BUCKET_NAME", "nulljet-share")
-		if err != nil {
-			return
-		}
-		err = os.Setenv("AWS_ENDPOINT", "https://tw-001.s3.synologyc2.net")
-		if err != nil {
-			return
-		}
-		err = os.Setenv("AWS_SECRET_ACCESS_KEY", "NLegC6KwfHf4zftDaWpSxnMiNhVv9KZF")
-		if err != nil {
-			return
-		}
-		err = os.Setenv("AWS_REGION", "tw-001")
-		if err != nil {
-			return
-		}
-	}
+	//err = godotenv.Load(wd + "/.env")
+
 	// S3 Settings Form
 	bucketEntry := widget.NewEntry()
-	bucketName := os.Getenv("BUCKET_NAME")
+	bucketName := myApp.Preferences().String("BUCKET_NAME")
+	if len(bucketName) == 0 {
+		// create default
+		myApp.Preferences().SetString("AWS_ACCESS_KEY_ID", "tw6kCfjGMh75do0R9I6SAG8JyvuuKI80")
+		myApp.Preferences().SetString("BUCKET_NAME", "nulljet-share")
+		myApp.Preferences().SetString("AWS_ENDPOINT", "https://tw-001.s3.synologyc2.net")
+		myApp.Preferences().SetString("AWS_SECRET_ACCESS_KEY", "NLegC6KwfHf4zftDaWpSxnMiNhVv9KZF")
+		myApp.Preferences().SetString("AWS_REGION", "tw-001")
+		bucketName = myApp.Preferences().String("BUCKET_NAME")
+	}
 	bucketEntry.SetText(bucketName)
 	regionEntry := widget.NewEntry()
-	regionEntry.SetText(os.Getenv("AWS_REGION"))
+	regionEntry.SetText(myApp.Preferences().String("AWS_REGION"))
 	idEntry := widget.NewEntry()
-	idEntry.SetText(os.Getenv("AWS_ACCESS_KEY_ID"))
+	idEntry.SetText(myApp.Preferences().String("AWS_ACCESS_KEY_ID"))
 	tokenEntry := widget.NewEntry()
-	tokenEntry.SetText(os.Getenv("AWS_SECRET_ACCESS_KEY"))
+	tokenEntry.SetText(myApp.Preferences().String("AWS_SECRET_ACCESS_KEY"))
 	endpointEntry := widget.NewEntry()
-	endpointEntry.SetText(os.Getenv("AWS_ENDPOINT"))
+	endpointEntry.SetText(myApp.Preferences().String("AWS_ENDPOINT"))
 
 	progressEntry := widget.NewProgressBarInfinite()
 	progressEntry.Hide()
@@ -78,7 +65,7 @@ func main() {
 		endpoint := endpointEntry.Text
 
 		// Perform save data
-		saveData(myWindow, bucket, endpoint, region, id, token, wd)
+		saveData(myApp, myWindow, bucket, endpoint, region, id, token)
 	}
 
 	if desk, ok := myApp.(desktop.App); ok {
@@ -203,39 +190,18 @@ func main() {
 	myWindow.ShowAndRun()
 }
 
-func saveData(myWindow fyne.Window, bucket string, endpoint string, region string, id string, token string, wd string) {
+func saveData(myApp fyne.App, myWindow fyne.Window, bucket string, endpoint string, region string, id string, token string) {
 	// Call os.MkdirAll with the directory path
-	err := os.MkdirAll(wd, os.ModePerm)
-	if err != nil {
-		dialog.ShowError(err, myWindow)
-	}
-	file, err := os.Create(wd + "/.env")
-	dialog.ShowInformation("info", wd, myWindow)
-	if err != nil {
-		dialog.ShowError(err, myWindow)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			dialog.ShowError(err, myWindow)
-		}
-	}(file)
-
 	expireIn := "24h"
 	shortService := "https://s.inxo.ru/shorten"
 
-	writer := bufio.NewWriter(file)
-	_, _ = fmt.Fprintf(writer, "BUCKET_NAME=%s\n", bucket)
-	_, _ = fmt.Fprintf(writer, "AWS_ACCESS_KEY_ID=%s\n", id)
-	_, _ = fmt.Fprintf(writer, "AWS_ENDPOINT=%s\n", endpoint)
-	_, _ = fmt.Fprintf(writer, "AWS_SECRET_ACCESS_KEY=%s\n", token)
-	_, _ = fmt.Fprintf(writer, "AWS_REGION=%s\n", region)
-	_, _ = fmt.Fprintf(writer, "EXPIRE_IN=%s\n", expireIn)
-	_, _ = fmt.Fprintf(writer, "SHORTEN_SERVICE=%s\n", shortService)
-	err = writer.Flush()
-	if err != nil {
-		dialog.ShowError(err, myWindow)
-	} else {
-		dialog.ShowInformation("Save Success", "Data save successfully!", myWindow)
-	}
+	myApp.Preferences().SetString("BUCKET_NAME", bucket)
+	myApp.Preferences().SetString("AWS_ACCESS_KEY_ID", id)
+	myApp.Preferences().SetString("AWS_ENDPOINT", endpoint)
+	myApp.Preferences().SetString("AWS_SECRET_ACCESS_KEY", token)
+	myApp.Preferences().SetString("AWS_REGION", region)
+	myApp.Preferences().SetString("EXPIRE_IN", expireIn)
+	myApp.Preferences().SetString("SHORTEN_SERVICE", shortService)
+
+	dialog.ShowInformation("Save Success", "Data save successfully!", myWindow)
 }
