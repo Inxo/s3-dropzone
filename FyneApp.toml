@@ -4,5 +4,5 @@ Website = "https://inxo.ru"
   Icon = "Icon.png"
   Name = "Drop App"
   ID = "ru.inxo.drop.app"
-  Version = "1.0.0"
+  Version = "1.0.1"
   Build = 15
