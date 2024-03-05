@@ -14,21 +14,43 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/joho/godotenv"
 	"golang.design/x/clipboard"
-	"log"
 	"os"
 	"strings"
 	"time"
 )
 
 func main() {
-	wd, err := os.Getwd()
+	myApp := app.New()
+	wd := myApp.Storage().RootURI().String()
+	err := os.MkdirAll(wd, os.ModePerm)
 	if err != nil {
-		log.Fatalln("No work dir")
+		println(err)
 	}
 	// Load environment variables
 	err = godotenv.Load(wd + "/.env")
-
-	myApp := app.New()
+	if err != nil {
+		// create default
+		err := os.Setenv("AWS_ACCESS_KEY_ID", "tw6kCfjGMh75do0R9I6SAG8JyvuuKI80")
+		if err != nil {
+			return
+		}
+		err = os.Setenv("BUCKET_NAME", "nulljet-share")
+		if err != nil {
+			return
+		}
+		err = os.Setenv("AWS_ENDPOINT", "https://tw-001.s3.synologyc2.net")
+		if err != nil {
+			return
+		}
+		err = os.Setenv("AWS_SECRET_ACCESS_KEY", "NLegC6KwfHf4zftDaWpSxnMiNhVv9KZF")
+		if err != nil {
+			return
+		}
+		err = os.Setenv("AWS_REGION", "tw-001")
+		if err != nil {
+			return
+		}
+	}
 	// S3 Settings Form
 	bucketEntry := widget.NewEntry()
 	bucketName := os.Getenv("BUCKET_NAME")
@@ -150,7 +172,7 @@ func main() {
 
 		expireIn := os.Getenv("EXPIRE_IN")
 		if len(expireIn) == 0 {
-			expireIn = "+7200h"
+			expireIn = "+168h"
 		}
 		if !strings.HasPrefix(expireIn, "+") {
 			expireIn = "+" + expireIn
@@ -182,16 +204,25 @@ func main() {
 }
 
 func saveData(myWindow fyne.Window, bucket string, endpoint string, region string, id string, token string, wd string) {
-	file, err := os.Create(wd + "/.env")
+	// Call os.MkdirAll with the directory path
+	err := os.MkdirAll(wd, os.ModePerm)
 	if err != nil {
-		log.Fatal(err)
+		dialog.ShowError(err, myWindow)
+	}
+	file, err := os.Create(wd + "/.env")
+	dialog.ShowInformation("info", wd, myWindow)
+	if err != nil {
+		dialog.ShowError(err, myWindow)
 	}
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
-
+			dialog.ShowError(err, myWindow)
 		}
 	}(file)
+
+	expireIn := "24h"
+	shortService := "https://s.inxo.ru/shorten"
 
 	writer := bufio.NewWriter(file)
 	_, _ = fmt.Fprintf(writer, "BUCKET_NAME=%s\n", bucket)
@@ -199,6 +230,8 @@ func saveData(myWindow fyne.Window, bucket string, endpoint string, region strin
 	_, _ = fmt.Fprintf(writer, "AWS_ENDPOINT=%s\n", endpoint)
 	_, _ = fmt.Fprintf(writer, "AWS_SECRET_ACCESS_KEY=%s\n", token)
 	_, _ = fmt.Fprintf(writer, "AWS_REGION=%s\n", region)
+	_, _ = fmt.Fprintf(writer, "EXPIRE_IN=%s\n", expireIn)
+	_, _ = fmt.Fprintf(writer, "SHORTEN_SERVICE=%s\n", shortService)
 	err = writer.Flush()
 	if err != nil {
 		dialog.ShowError(err, myWindow)

@@ -1,0 +1,8 @@
+Website = "https://inxo.ru"
+
+[Details]
+  Icon = "Icon.png"
+  Name = "Drop App"
+  ID = "ru.inxo.drop.app"
+  Version = "1.0.0"
+  Build = 4
