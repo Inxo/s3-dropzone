@@ -20,9 +20,7 @@ type Sync struct {
 	BucketName string
 }
 
-func (s *Sync) Init() error {
-	bucketName := os.Getenv("BUCKET_NAME")
-
+func (s *Sync) Init(bucketName string, keyId string, accessKey string, endpoint string, region string) error {
 	// Validate environment variables
 	if bucketName == "" {
 		//log.Fatal(".env file not loaded or missing required variables")
@@ -30,9 +28,9 @@ func (s *Sync) Init() error {
 	}
 
 	s3Config := &aws.Config{
-		Credentials:      credentials.NewStaticCredentials(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), ""),
-		Endpoint:         aws.String(os.Getenv("AWS_ENDPOINT")),
-		Region:           aws.String(os.Getenv("AWS_REGION")),
+		Credentials:      credentials.NewStaticCredentials(keyId, accessKey, ""),
+		Endpoint:         aws.String(endpoint),
+		Region:           aws.String(region),
 		S3ForcePathStyle: aws.Bool(true),
 	}
 
@@ -50,7 +48,7 @@ func (s *Sync) Init() error {
 }
 
 func (s *Sync) UploadToS3(filename string, expire time.Duration) (string, error) {
-	s.Init()
+
 	// Create S3 service client
 	svc := s.SVC
 
@@ -67,20 +65,14 @@ func (s *Sync) UploadToS3(filename string, expire time.Duration) (string, error)
 		}
 	}(file)
 
-	// Get the MIME type
-	//buffer := make([]byte, 512) // Read the first 512 bytes to detect the content type
-	//_, err = file.Read(buffer)
-	//if err != nil {
-	//	return "", err
-	//}
-
-	//contentType := http.DetectContentType(buffer)
-
 	fileInfo, _ := file.Stat()
 	size := fileInfo.Size()
 	buffer := make([]byte, size) // read file content to buffer
 
-	file.Read(buffer)
+	_, err = file.Read(buffer)
+	if err != nil {
+		return "", err
+	}
 	fileBytes := bytes.NewReader(buffer)
 	contentType := http.DetectContentType(buffer)
 	// Upload the file to S3

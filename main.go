@@ -11,9 +11,13 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/kbinani/screenshot"
 	"golang.design/x/clipboard"
+	"image/png"
+	"log"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -44,18 +48,60 @@ func main() {
 	}
 	bucketEntry.SetText(bucketName)
 	regionEntry := widget.NewEntry()
-	regionEntry.SetText(myApp.Preferences().String("AWS_REGION"))
+	region := myApp.Preferences().String("AWS_REGION")
+	regionEntry.SetText(region)
 	idEntry := widget.NewEntry()
-	idEntry.SetText(myApp.Preferences().String("AWS_ACCESS_KEY_ID"))
+	keyId := myApp.Preferences().String("AWS_ACCESS_KEY_ID")
+	idEntry.SetText(keyId)
 	tokenEntry := widget.NewEntry()
-	tokenEntry.SetText(myApp.Preferences().String("AWS_SECRET_ACCESS_KEY"))
+	accessKey := myApp.Preferences().String("AWS_SECRET_ACCESS_KEY")
+	tokenEntry.SetText(accessKey)
 	endpointEntry := widget.NewEntry()
-	endpointEntry.SetText(myApp.Preferences().String("AWS_ENDPOINT"))
+	endpoint := myApp.Preferences().String("AWS_ENDPOINT")
+	endpointEntry.SetText(endpoint)
 
 	progressEntry := widget.NewProgressBarInfinite()
 	progressEntry.Hide()
 
 	myWindow := myApp.NewWindow("File Drop App")
+
+	saveScreen := func() string {
+		log.Println("Take Screenshot")
+		myWindow.Hide()
+		time.Sleep(1)
+		ex, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		exPath := filepath.Dir(ex)
+		fmt.Println(exPath)
+		n := screenshot.NumActiveDisplays()
+		var fileName string
+		for i := 0; i < n; i++ {
+			bounds := screenshot.GetDisplayBounds(i)
+
+			img, err := screenshot.CaptureRect(bounds)
+			if err != nil {
+				panic(err)
+			}
+
+			fileName = fmt.Sprintf("%d_%dx%d.png", i, bounds.Dx(), bounds.Dy())
+			file, _ := os.Create(exPath + "/" + fileName)
+			defer func(file *os.File) {
+				err := file.Close()
+				if err != nil {
+
+				}
+			}(file)
+			err = png.Encode(file, img)
+			if err != nil {
+				return ""
+			}
+		}
+
+		myWindow.Show()
+		return exPath + "/" + fileName
+	}
 
 	saveShort := func() {
 		// Handle form submission
@@ -67,16 +113,6 @@ func main() {
 
 		// Perform save data
 		saveData(myApp, myWindow, bucket, endpoint, region, id, token)
-	}
-
-	if desk, ok := myApp.(desktop.App); ok {
-		m := fyne.NewMenu("MyApp",
-			fyne.NewMenuItem("Show", func() {
-				myWindow.Show()
-			}))
-
-		desk.SetSystemTrayMenu(m)
-		desk.SetSystemTrayIcon(theme.StorageIcon())
 	}
 
 	myWindow.Resize(fyne.Size{
@@ -156,12 +192,12 @@ func main() {
 	))
 
 	sync := Sync{}
+	err = sync.Init(bucketName, keyId, accessKey, endpoint, region)
+	if err != nil {
+		dialog.ShowError(err, myWindow)
+	}
 
-	myWindow.SetOnDropped(func(pos fyne.Position, url []fyne.URI) {
-		filePath := url[0].String()
-		if len(url) > 1 {
-			// generate page
-		}
+	shortUpload := func(filePath string) {
 		filePathLabel.SetText(fmt.Sprintf("Dropped file path: %s", filePath))
 
 		expireIn := os.Getenv("EXPIRE_IN")
@@ -193,7 +229,41 @@ func main() {
 			return
 		}
 		filePathLabel.SetText("Download link")
+	}
+
+	makeScreen := func() {
+		filePath := saveScreen()
+		if len(filePath) > 1 {
+			shortUpload(filePath)
+		}
+	}
+
+	ctrlAltS := desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierControl | fyne.KeyModifierAlt}
+	myWindow.Canvas().AddShortcut(&ctrlAltS, func(shortcut fyne.Shortcut) {
+		makeScreen()
 	})
+
+	myWindow.SetOnDropped(func(pos fyne.Position, url []fyne.URI) {
+		filePath := url[0].String()
+		if len(url) > 1 {
+			// generate page
+		}
+		shortUpload(filePath)
+	})
+
+	if desk, ok := myApp.(desktop.App); ok {
+		m := fyne.NewMenu("MyApp",
+			fyne.NewMenuItem("Show App", func() {
+				myWindow.Show()
+			}),
+			fyne.NewMenuItem("Take Screenshot", func() {
+				makeScreen()
+			}))
+
+		desk.SetSystemTrayMenu(m)
+		desk.SetSystemTrayIcon(theme.StorageIcon())
+	}
+
 	myWindow.ShowAndRun()
 }
 
