@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"golang.design/x/clipboard"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -104,9 +105,15 @@ func main() {
 	}
 
 	// Создаем виджет для отображения пути к файлу
-	filePathLabel := widget.NewHyperlink("Drop a file here", nil)
+	uri, err := url.Parse("https://s.inxo.ru")
+	if err != nil {
+		dialog.ShowError(err, myWindow)
+	}
+	filePathLabel := widget.NewHyperlink("Drop a file here", uri)
 	copyIconButton := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
-		clipboard.Write(clipboard.FmtText, []byte(filePathLabel.URL.String()))
+		if len(filePathLabel.URL.String()) > 0 {
+			clipboard.Write(clipboard.FmtText, []byte(filePathLabel.URL.String()))
+		}
 	})
 
 	myWindow.SetIcon(theme.StorageIcon())

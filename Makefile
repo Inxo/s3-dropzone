@@ -8,7 +8,7 @@ ENV_FILE := .env
 export
 
 # Variables
-BINARY_NAME := sync
+BINARY_NAME := dropZone
 GO_FILES := $(wildcard *.go)
 
 # Commands
@@ -16,16 +16,21 @@ GO_FILES := $(wildcard *.go)
 
 build:
 	@echo "Building $(BINARY_NAME)..."
-	@go build -o build/$(BINARY_NAME) -ldflags='-extldflags "-static" -s -w' ./src/$(GO_FILES)
+	@go build -o build/$(BINARY_NAME) -ldflags='-s -w' ./$(GO_FILES)
+
+buildarm:
+	@echo "Building $(BINARY_NAME)..."
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -o build/$(BINARY_NAME) -ldflags='-s -w' ./$(GO_FILES)
+
 
 package:
 	@echo "Package $(BINARY_NAME)..."
-	@fyne package -os darwin -icon Icon.png -name $(BINARY_NAME)App ./src/$(GO_FILES)
+	@fyne package -os darwin -icon Icon.png -name $(BINARY_NAME)App ./$(GO_FILES)
 
 build-win:
 	@echo "Building windows $(BINARY_NAME)..."
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
-	go build -a -ldflags '-extldflags "-static" -s -w' -o build/$(BINARY_NAME).exe  ./src/$(GO_FILES)
+	go build -a -ldflags '-extldflags "-static" -s -w' -o build/$(BINARY_NAME).exe  ./$(GO_FILES)
 
 test:
 	@echo "Testing $(BINARY_NAME)..."
