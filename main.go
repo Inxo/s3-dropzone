@@ -31,8 +31,6 @@ func main() {
 	if err != nil {
 		println(err)
 	}
-	// Load environment variables
-	//err = godotenv.Load(wd + "/.env")
 
 	// S3 Settings Form
 	bucketEntry := widget.NewEntry()
@@ -46,25 +44,26 @@ func main() {
 		myApp.Preferences().SetString("AWS_REGION", "tw-001")
 		bucketName = myApp.Preferences().String("BUCKET_NAME")
 	}
+	region := myApp.Preferences().String("AWS_REGION")
+	keyId := myApp.Preferences().String("AWS_ACCESS_KEY_ID")
+	accessKey := myApp.Preferences().String("AWS_SECRET_ACCESS_KEY")
+	endpoint := myApp.Preferences().String("AWS_ENDPOINT")
+
 	bucketEntry.SetText(bucketName)
 	regionEntry := widget.NewEntry()
-	region := myApp.Preferences().String("AWS_REGION")
 	regionEntry.SetText(region)
 	idEntry := widget.NewEntry()
-	keyId := myApp.Preferences().String("AWS_ACCESS_KEY_ID")
 	idEntry.SetText(keyId)
 	tokenEntry := widget.NewEntry()
-	accessKey := myApp.Preferences().String("AWS_SECRET_ACCESS_KEY")
 	tokenEntry.SetText(accessKey)
 	endpointEntry := widget.NewEntry()
-	endpoint := myApp.Preferences().String("AWS_ENDPOINT")
 	endpointEntry.SetText(endpoint)
 
 	progressEntry := widget.NewProgressBarInfinite()
 	progressEntry.Hide()
 
 	myWindow := myApp.NewWindow("File Drop App")
-
+	myWindow.SetIcon(resourceIconPng)
 	saveScreen := func() string {
 		log.Println("Take Screenshot")
 		myWindow.Hide()
@@ -103,7 +102,7 @@ func main() {
 		return exPath + "/" + fileName
 	}
 
-	saveShort := func() {
+	savePreferences := func() {
 		// Handle form submission
 		bucket := bucketEntry.Text
 		region := regionEntry.Text
@@ -136,7 +135,7 @@ func main() {
 			{Text: "Id", Widget: idEntry},
 			{Text: "Token", Widget: tokenEntry},
 		},
-		OnSubmit:   saveShort,
+		OnSubmit:   savePreferences,
 		SubmitText: "Save",
 	}
 
@@ -145,14 +144,12 @@ func main() {
 	if err != nil {
 		dialog.ShowError(err, myWindow)
 	}
-	filePathLabel := widget.NewHyperlink("Drop a file here", uri)
+	filePathLabel := widget.NewHyperlink("File: ", uri)
 	copyIconButton := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
 		if len(filePathLabel.URL.String()) > 0 {
 			clipboard.Write(clipboard.FmtText, []byte(filePathLabel.URL.String()))
 		}
 	})
-
-	myWindow.SetIcon(theme.StorageIcon())
 
 	// Создаем дроп-зону для файла
 	dropContainer := container.New(
@@ -166,18 +163,6 @@ func main() {
 			copyIconButton,
 		),
 	)
-
-	// Если передан аргумент командной строки, используем его как путь к файлу
-	if len(os.Args) > 1 {
-		filePath := os.Args[1]
-		filePathLabel.SetText(fmt.Sprintf("File path from command line argument: %s", filePath))
-		err := filePathLabel.SetURLFromString("https://s.inxo.ru")
-		if err != nil {
-			dialog.ShowError(err, myWindow)
-			return
-		}
-		//filePathLabel.Hide()
-	}
 
 	headerSettings := widget.NewLabel("S3 Object Storage Settings")
 	// Combine forms into a tab container
@@ -231,6 +216,18 @@ func main() {
 		filePathLabel.SetText("Download link")
 	}
 
+	// Если передан аргумент командной строки, используем его как путь к файлу
+	if len(os.Args) > 1 {
+		filePath := os.Args[1]
+		filePathLabel.SetText(fmt.Sprintf("File path from command line argument: %s", filePath))
+		err := filePathLabel.SetURLFromString("https://s.inxo.ru")
+		if err != nil {
+			dialog.ShowError(err, myWindow)
+			return
+		}
+		shortUpload(filePath)
+	}
+
 	makeScreen := func() {
 		filePath := saveScreen()
 		if len(filePath) > 1 {
@@ -242,6 +239,7 @@ func main() {
 	myWindow.Canvas().AddShortcut(&ctrlAltS, func(shortcut fyne.Shortcut) {
 		makeScreen()
 	})
+	myWindow.SetIcon(resourceIconPng)
 
 	myWindow.SetOnDropped(func(pos fyne.Position, url []fyne.URI) {
 		filePath := url[0].String()
@@ -261,7 +259,7 @@ func main() {
 			}))
 
 		desk.SetSystemTrayMenu(m)
-		desk.SetSystemTrayIcon(theme.StorageIcon())
+		desk.SetSystemTrayIcon(resourceIconPng)
 	}
 
 	myWindow.ShowAndRun()
