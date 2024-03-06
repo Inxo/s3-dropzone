@@ -14,7 +14,7 @@ Then clone the repository and run the program:
 
 ```
 git clone https://github.com/inxo/s3-dropzone.git
-cd file-drop-app
+cd s3-dropzone
 go run main.go
 ```
 
