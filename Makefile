@@ -16,11 +16,11 @@ GO_FILES := $(wildcard *.go)
 
 build:
 	@echo "Building $(BINARY_NAME)..."
-	@go build -o build/$(BINARY_NAME) -ldflags='-s -w' ./$(GO_FILES)
-
+	@go build -o build/$(BINARY_NAME) -ldflags='-s -w -H=windowsgui' ./$(GO_FILES)
 buildarm:
 	@echo "Building $(BINARY_NAME)..."
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -o build/$(BINARY_NAME) -ldflags='-s -w' ./$(GO_FILES)
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -o build/$(BINARY_NAME) -ldflags='-s -w  -H=windowsgui' ./$(GO_FILES)
+
 
 
 package:
@@ -30,7 +30,7 @@ package:
 build-win:
 	@echo "Building windows $(BINARY_NAME)..."
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
-	go build -a -ldflags '-extldflags "-static" -s -w' -o build/$(BINARY_NAME).exe  ./$(GO_FILES)
+	go build -a -ldflags '-extldflags "-static" -s -w  -H=windowsgui	' -buildvcs=false -o build/$(BINARY_NAME).exe  ./$(GO_FILES)
 
 test:
 	@echo "Testing $(BINARY_NAME)..."
