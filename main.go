@@ -1,7 +1,8 @@
 package main
 
 import (
-	"dropZone/short"
+	"capyDrop/page_maker"
+	"capyDrop/short"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -23,7 +24,7 @@ import (
 )
 
 func main() {
-	myApp := app.NewWithID("ru.inxo.drop.app")
+	myApp := app.NewWithID("com.n32b.drop.app")
 	myApp.SetIcon(resourceIconPng)
 	wd := myApp.Storage().RootURI().String()
 
@@ -176,13 +177,14 @@ func main() {
 		tabs,
 	))
 
-	sync := Sync{}
+	pageMaker := page_maker.PageMaker{}
+	sync := Sync{PageMaker: pageMaker}
 	err = sync.Init(bucketName, keyId, accessKey, endpoint, region)
 	if err != nil {
 		dialog.ShowError(err, myWindow)
 	}
 
-	shortUpload := func(filePath string) {
+	shortUpload := func(filePath string) (string, error) {
 		filePathLabel.SetText(fmt.Sprintf("Dropped file path: %s", filePath))
 
 		expireIn := os.Getenv("EXPIRE_IN")
@@ -195,25 +197,23 @@ func main() {
 
 		duration, err := time.ParseDuration(expireIn)
 		if err != nil {
-			return
+			return "", err
 		}
 
 		urlUploaded, err := sync.UploadToS3(filePath, duration)
 		if err != nil {
-			dialog.ShowError(err, myWindow)
-			return
+			return "", err
 		}
 		urlShort, err := short.NewLink(urlUploaded)
 		if err != nil {
-			dialog.ShowError(err, myWindow)
-			return
+			return "", err
 		}
 		err = filePathLabel.SetURLFromString(urlShort)
 		if err != nil {
-			dialog.ShowError(err, myWindow)
-			return
+			return "", err
 		}
 		filePathLabel.SetText("Download link")
+		return urlUploaded, nil
 	}
 
 	// Если передан аргумент командной строки, используем его как путь к файлу
@@ -225,13 +225,27 @@ func main() {
 			dialog.ShowError(err, myWindow)
 			return
 		}
-		shortUpload(filePath)
+		uploadLink, _ := shortUpload(filePath)
+		pagePath := pageMaker.Do(uploadLink, "image")
+		pageLink, err := shortUpload(pagePath)
+		if err != nil {
+			dialog.ShowError(err, myWindow)
+			return
+		}
+		uploadLink = pageLink
 	}
 
 	makeScreen := func() {
 		filePath := saveScreen()
 		if len(filePath) > 1 {
-			shortUpload(filePath)
+			uploadLink, _ := shortUpload(filePath)
+			pagePath := pageMaker.Do(uploadLink, "image")
+			pageLink, err := shortUpload(pagePath)
+			if err != nil {
+				dialog.ShowError(err, myWindow)
+				return
+			}
+			uploadLink = pageLink
 		}
 	}
 
@@ -246,7 +260,14 @@ func main() {
 		if len(url) > 1 {
 			// generate page
 		}
-		shortUpload(filePath)
+		_, err := shortUpload(filePath)
+		dialog.ShowError(err, myWindow)
+		//if makeStyledPage {
+		//	mime, err := detectMime(filePath)
+		//	dialog.ShowError(err, myWindow)
+		//	pagePath := pageMaker.Do(link, mime)
+		//	_, err = shortUpload(pagePath)
+		//}
 	})
 
 	if desk, ok := myApp.(desktop.App); ok {

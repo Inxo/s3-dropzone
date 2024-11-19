@@ -8,7 +8,7 @@ ENV_FILE := .env
 export
 
 # Variables
-BINARY_NAME := dropZone
+BINARY_NAME := CapyDrop
 GO_FILES := $(wildcard *.go)
 
 # Commands

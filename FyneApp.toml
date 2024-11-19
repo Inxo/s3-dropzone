@@ -1,8 +1,8 @@
-Website = "https://inxo.ru"
+Website = "https://n32b.com"
 
 [Details]
   Icon = "Icon.png"
-  Name = "Drop App"
-  ID = "ru.inxo.drop.app"
-  Version = "1.0.1"
-  Build = 28
+  Name = "Capy Drop"
+  ID = "com.n32b.drop.app"
+  Version = "1.1.0"
+  Build = 32
