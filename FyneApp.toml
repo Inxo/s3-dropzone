@@ -2,7 +2,7 @@ Website = "https://n32b.com"
 
 [Details]
   Icon = "Icon.png"
-  Name = "Capy Drop"
+  Name = "CapyDrop"
   ID = "com.n32b.drop.app"
   Version = "1.1.0"
-  Build = 32
+  Build = 36

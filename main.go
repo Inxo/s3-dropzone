@@ -122,6 +122,7 @@ func main() {
 
 	myWindow.SetCloseIntercept(func() {
 		myWindow.Hide()
+		setActivationPolicy(false)
 	})
 	err = clipboard.Init()
 	if err != nil {
@@ -274,6 +275,7 @@ func main() {
 		m := fyne.NewMenu("MyApp",
 			fyne.NewMenuItem("Show App", func() {
 				myWindow.Show()
+				setActivationPolicy(true)
 			}),
 			fyne.NewMenuItem("Take Screenshot", func() {
 				makeScreen()
@@ -282,7 +284,9 @@ func main() {
 		desk.SetSystemTrayMenu(m)
 		desk.SetSystemTrayIcon(resourceIconPng)
 	}
-
+	myApp.Lifecycle().SetOnStarted(func() {
+		setActivationPolicy(true)
+	})
 	myWindow.ShowAndRun()
 }
 
