@@ -239,14 +239,14 @@ func main() {
 	makeScreen := func() {
 		filePath := saveScreen()
 		if len(filePath) > 1 {
-			uploadLink, _ := shortUpload(filePath)
-			pagePath := pageMaker.Do(uploadLink, "image")
-			pageLink, err := shortUpload(pagePath)
+			_, err = shortUpload(filePath)
+			//pagePath := pageMaker.Do(uploadLink, "image")
+			//pageLink, err := shortUpload(pagePath)
 			if err != nil {
 				dialog.ShowError(err, myWindow)
 				return
 			}
-			uploadLink = pageLink
+			//uploadLink = pageLink
 		}
 	}
 
@@ -273,7 +273,7 @@ func main() {
 
 	if desk, ok := myApp.(desktop.App); ok {
 		m := fyne.NewMenu("MyApp",
-			fyne.NewMenuItem("Show App", func() {
+			fyne.NewMenuItem("Drop File", func() {
 				myWindow.Show()
 				setActivationPolicy(true)
 			}),
