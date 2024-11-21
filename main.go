@@ -1,6 +1,7 @@
 package main
 
 import (
+	"capyDrop/capywidget"
 	"capyDrop/page_maker"
 	"capyDrop/short"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -35,20 +37,19 @@ func main() {
 
 	// S3 Settings Form
 	bucketEntry := widget.NewEntry()
-	bucketName := myApp.Preferences().String("BUCKET_NAME")
-	if len(bucketName) == 0 {
+	shortService := myApp.Preferences().String("SHORT_SERVICE")
+	if len(shortService) == 0 {
 		// create default
-		myApp.Preferences().SetString("AWS_ACCESS_KEY_ID", "tw6kCfjGMh75do0R9I6SAG8JyvuuKI80")
-		myApp.Preferences().SetString("BUCKET_NAME", "nulljet-share")
-		myApp.Preferences().SetString("AWS_ENDPOINT", "https://tw-001.s3.synologyc2.net")
-		myApp.Preferences().SetString("AWS_SECRET_ACCESS_KEY", "NLegC6KwfHf4zftDaWpSxnMiNhVv9KZF")
-		myApp.Preferences().SetString("AWS_REGION", "tw-001")
-		bucketName = myApp.Preferences().String("BUCKET_NAME")
+		myApp.Preferences().SetInt("EXPIRE_IN", 24)
+		myApp.Preferences().SetString("SHORT_SERVICE", "https://s.n32b.com/shorten")
 	}
+	bucketName := myApp.Preferences().String("BUCKET_NAME")
 	region := myApp.Preferences().String("AWS_REGION")
 	keyId := myApp.Preferences().String("AWS_ACCESS_KEY_ID")
 	accessKey := myApp.Preferences().String("AWS_SECRET_ACCESS_KEY")
 	endpoint := myApp.Preferences().String("AWS_ENDPOINT")
+	expireIn := myApp.Preferences().Int("EXPIRE_IN")
+	shortService = myApp.Preferences().String("SHORT_SERVICE")
 
 	bucketEntry.SetText(bucketName)
 	regionEntry := widget.NewEntry()
@@ -59,6 +60,10 @@ func main() {
 	tokenEntry.SetText(accessKey)
 	endpointEntry := widget.NewEntry()
 	endpointEntry.SetText(endpoint)
+	expireInEntry := capywidget.NewNumericalEntry()
+	expireInEntry.SetValue(expireIn)
+	shortServiceEntry := widget.NewEntry()
+	shortServiceEntry.SetText(shortService)
 
 	progressEntry := widget.NewProgressBarInfinite()
 	progressEntry.Hide()
@@ -110,9 +115,20 @@ func main() {
 		token := tokenEntry.Text
 		id := idEntry.Text
 		endpoint := endpointEntry.Text
+		expireIn, _ := strconv.Atoi(expireInEntry.Text)
+		shortService := shortServiceEntry.Text
 
 		// Perform save data
-		saveData(myApp, myWindow, bucket, endpoint, region, id, token)
+		p := Preferences{
+			Bucket:       bucket,
+			Endpoint:     endpoint,
+			Region:       region,
+			Id:           id,
+			Token:        token,
+			ExpireIn:     expireIn,
+			ShortService: shortService,
+		}
+		saveData(myApp, myWindow, p)
 	}
 
 	myWindow.Resize(fyne.Size{
@@ -131,22 +147,26 @@ func main() {
 
 	form := &widget.Form{
 		Items: []*widget.FormItem{
+			{Widget: widget.NewLabel("Object Storage Settings")},
 			{Text: "Bucket", Widget: bucketEntry},
 			{Text: "Endpoint", Widget: endpointEntry},
 			{Text: "Region", Widget: regionEntry},
 			{Text: "Id", Widget: idEntry},
 			{Text: "Token", Widget: tokenEntry},
+			{Widget: widget.NewLabel("Shorting url service")},
+			{Text: "Expire In", Widget: expireInEntry},
+			{Text: "Short Service", Widget: shortServiceEntry},
 		},
 		OnSubmit:   savePreferences,
 		SubmitText: "Save",
 	}
 
 	// Создаем виджет для отображения пути к файлу
-	uri, err := url.Parse("https://s.inxo.ru")
+	uri, err := url.Parse("https://s.n32b.com")
 	if err != nil {
 		dialog.ShowError(err, myWindow)
 	}
-	filePathLabel := widget.NewHyperlink("File: ", uri)
+	filePathLabel := widget.NewHyperlink("n32b.com ", uri)
 	copyIconButton := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
 		if len(filePathLabel.URL.String()) > 0 {
 			clipboard.Write(clipboard.FmtText, []byte(filePathLabel.URL.String()))
@@ -166,11 +186,10 @@ func main() {
 		),
 	)
 
-	headerSettings := widget.NewLabel("S3 Object Storage Settings")
 	// Combine forms into a tab container
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Upload", container.New(layout.NewVBoxLayout(), dropContainer)),
-		container.NewTabItem("Settings", container.New(layout.NewVBoxLayout(), headerSettings, form)),
+		container.NewTabItem("Settings", container.New(layout.NewVBoxLayout(), form)),
 	)
 
 	myWindow.SetContent(container.NewVBox(
@@ -221,7 +240,7 @@ func main() {
 	if len(os.Args) > 1 {
 		filePath := os.Args[1]
 		filePathLabel.SetText(fmt.Sprintf("File path from command line argument: %s", filePath))
-		err := filePathLabel.SetURLFromString("https://s.inxo.ru")
+		err := filePathLabel.SetURLFromString("https://s.n32b.com")
 		if err != nil {
 			dialog.ShowError(err, myWindow)
 			return
@@ -290,18 +309,15 @@ func main() {
 	myWindow.ShowAndRun()
 }
 
-func saveData(myApp fyne.App, myWindow fyne.Window, bucket string, endpoint string, region string, id string, token string) {
-	// Call os.MkdirAll with the directory path
-	expireIn := "24h"
-	shortService := "https://s.inxo.ru/shorten"
+func saveData(myApp fyne.App, myWindow fyne.Window, p Preferences) {
 
-	myApp.Preferences().SetString("BUCKET_NAME", bucket)
-	myApp.Preferences().SetString("AWS_ACCESS_KEY_ID", id)
-	myApp.Preferences().SetString("AWS_ENDPOINT", endpoint)
-	myApp.Preferences().SetString("AWS_SECRET_ACCESS_KEY", token)
-	myApp.Preferences().SetString("AWS_REGION", region)
-	myApp.Preferences().SetString("EXPIRE_IN", expireIn)
-	myApp.Preferences().SetString("SHORTEN_SERVICE", shortService)
+	myApp.Preferences().SetString("BUCKET_NAME", p.Bucket)
+	myApp.Preferences().SetString("AWS_ACCESS_KEY_ID", p.Id)
+	myApp.Preferences().SetString("AWS_ENDPOINT", p.Endpoint)
+	myApp.Preferences().SetString("AWS_SECRET_ACCESS_KEY", p.Token)
+	myApp.Preferences().SetString("AWS_REGION", p.Region)
+	myApp.Preferences().SetInt("EXPIRE_IN", p.ExpireIn)
+	myApp.Preferences().SetString("SHORT_SERVICE", p.ShortService)
 
 	dialog.ShowInformation("Save Success", "Data save successfully!", myWindow)
 }
