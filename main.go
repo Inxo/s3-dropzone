@@ -70,43 +70,6 @@ func main() {
 
 	myWindow := myApp.NewWindow("File Drop App")
 	myWindow.SetIcon(resourceIconPng)
-	saveScreen := func() string {
-		log.Println("Take Screenshot")
-		myWindow.Hide()
-		time.Sleep(1)
-		ex, err := os.Executable()
-		if err != nil {
-			panic(err)
-		}
-		exPath := filepath.Dir(ex)
-		fmt.Println(exPath)
-		n := screenshot.NumActiveDisplays()
-		var fileName string
-		for i := 0; i < n; i++ {
-			bounds := screenshot.GetDisplayBounds(i)
-
-			img, err := screenshot.CaptureRect(bounds)
-			if err != nil {
-				panic(err)
-			}
-
-			fileName = fmt.Sprintf("%d_%dx%d.png", i, bounds.Dx(), bounds.Dy())
-			file, _ := os.Create(exPath + "/" + fileName)
-			defer func(file *os.File) {
-				err := file.Close()
-				if err != nil {
-
-				}
-			}(file)
-			err = png.Encode(file, img)
-			if err != nil {
-				return ""
-			}
-		}
-
-		myWindow.Show()
-		return exPath + "/" + fileName
-	}
 
 	savePreferences := func() {
 		// Handle form submission
@@ -128,7 +91,7 @@ func main() {
 			ExpireIn:     expireIn,
 			ShortService: shortService,
 		}
-		saveData(myApp, myWindow, p)
+		p.SaveData(myApp, myWindow)
 	}
 
 	myWindow.Resize(fyne.Size{
@@ -196,6 +159,45 @@ func main() {
 		container.NewHBox(widget.NewLabel("Private share app")),
 		tabs,
 	))
+
+	saveScreen := func() string {
+		log.Println("Take Screenshot")
+		myWindow.Hide()
+		time.Sleep(1)
+		ex, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		exPath := filepath.Dir(ex)
+		fmt.Println(exPath)
+		n := screenshot.NumActiveDisplays()
+		var fileName string
+		for i := 0; i < n; i++ {
+			bounds := screenshot.GetDisplayBounds(i)
+
+			img, err := screenshot.CaptureRect(bounds)
+			if err != nil {
+				panic(err)
+			}
+
+			fileName = fmt.Sprintf("%d_%dx%d.png", i, bounds.Dx(), bounds.Dy())
+			file, _ := os.Create(exPath + "/" + fileName)
+			defer func(file *os.File) {
+				err := file.Close()
+				if err != nil {
+
+				}
+			}(file)
+			err = png.Encode(file, img)
+			if err != nil {
+				return ""
+			}
+		}
+
+		myWindow.Show()
+		tabs.SelectIndex(0)
+		return exPath + "/" + fileName
+	}
 
 	pageMaker := page_maker.PageMaker{}
 	sync := Sync{PageMaker: pageMaker}
@@ -295,6 +297,7 @@ func main() {
 			fyne.NewMenuItem("Drop File", func() {
 				myWindow.Show()
 				setActivationPolicy(true)
+				tabs.SelectIndex(0)
 			}),
 			fyne.NewMenuItem("Take Screenshot", func() {
 				makeScreen()
@@ -307,17 +310,4 @@ func main() {
 		setActivationPolicy(true)
 	})
 	myWindow.ShowAndRun()
-}
-
-func saveData(myApp fyne.App, myWindow fyne.Window, p Preferences) {
-
-	myApp.Preferences().SetString("BUCKET_NAME", p.Bucket)
-	myApp.Preferences().SetString("AWS_ACCESS_KEY_ID", p.Id)
-	myApp.Preferences().SetString("AWS_ENDPOINT", p.Endpoint)
-	myApp.Preferences().SetString("AWS_SECRET_ACCESS_KEY", p.Token)
-	myApp.Preferences().SetString("AWS_REGION", p.Region)
-	myApp.Preferences().SetInt("EXPIRE_IN", p.ExpireIn)
-	myApp.Preferences().SetString("SHORT_SERVICE", p.ShortService)
-
-	dialog.ShowInformation("Save Success", "Data save successfully!", myWindow)
 }
