@@ -3,10 +3,10 @@ package main
 import (
 	"capyDrop/capywidget"
 	"capyDrop/page_maker"
-	"capyDrop/short"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -91,7 +90,17 @@ func main() {
 			ExpireIn:     expireIn,
 			ShortService: shortService,
 		}
+
+		//systray.SetTitle("Awesome App")
+		//systray.SetTooltip("Pretty awesome棒棒嗒")
 		p.SaveData(myApp, myWindow)
+	}
+
+	pageMaker := page_maker.PageMaker{}
+	sync := Sync{PageMaker: pageMaker}
+	err = sync.Init(bucketName, keyId, accessKey, endpoint, region)
+	if err != nil {
+		dialog.ShowError(err, myWindow)
 	}
 
 	myWindow.Resize(fyne.Size{
@@ -137,15 +146,39 @@ func main() {
 	})
 
 	// Создаем дроп-зону для файла
+	image := canvas.NewImageFromResource(resourceIconPng)
+	image.FillMode = canvas.ImageFillOriginal
+	openImage := func() {
+		fd := dialog.NewFileOpen(func(closer fyne.URIReadCloser, err error) {
+			if err != nil {
+				dialog.ShowError(err, myWindow)
+				return
+			}
+			if closer == nil {
+				return
+			}
+			_, err = Upload(closer.URI().String(), filePathLabel, sync, myApp)
+			//dialog.ShowInformation("File", closer.URI().String(), myWindow)
+			if err != nil {
+				dialog.ShowError(err, myWindow)
+				return
+			}
+		}, myWindow)
+		if err != nil {
+			dialog.ShowError(err, myWindow)
+		}
+		fd.Show()
+	}
+	box := container.NewPadded(widget.NewButton("", openImage), image)
 	dropContainer := container.New(
 		layout.NewVBoxLayout(),
-		container.NewVBox(
-			widget.NewLabelWithStyle("Drop File Here", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
-			widget.NewIcon(theme.DocumentIcon()),
-		),
 		container.NewHBox(
 			filePathLabel,
 			copyIconButton,
+		),
+		container.NewVBox(
+			widget.NewLabelWithStyle("Drop File Here", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+			box,
 		),
 	)
 
@@ -199,45 +232,6 @@ func main() {
 		return exPath + "/" + fileName
 	}
 
-	pageMaker := page_maker.PageMaker{}
-	sync := Sync{PageMaker: pageMaker}
-	err = sync.Init(bucketName, keyId, accessKey, endpoint, region)
-	if err != nil {
-		dialog.ShowError(err, myWindow)
-	}
-
-	shortUpload := func(filePath string) (string, error) {
-		filePathLabel.SetText(fmt.Sprintf("Dropped file path: %s", filePath))
-
-		expireIn := os.Getenv("EXPIRE_IN")
-		if len(expireIn) == 0 {
-			expireIn = "+168h"
-		}
-		if !strings.HasPrefix(expireIn, "+") {
-			expireIn = "+" + expireIn
-		}
-
-		duration, err := time.ParseDuration(expireIn)
-		if err != nil {
-			return "", err
-		}
-
-		urlUploaded, err := sync.UploadToS3(filePath, duration)
-		if err != nil {
-			return "", err
-		}
-		urlShort, err := short.NewLink(urlUploaded)
-		if err != nil {
-			return "", err
-		}
-		err = filePathLabel.SetURLFromString(urlShort)
-		if err != nil {
-			return "", err
-		}
-		filePathLabel.SetText("Download link")
-		return urlUploaded, nil
-	}
-
 	// Если передан аргумент командной строки, используем его как путь к файлу
 	if len(os.Args) > 1 {
 		filePath := os.Args[1]
@@ -247,9 +241,9 @@ func main() {
 			dialog.ShowError(err, myWindow)
 			return
 		}
-		uploadLink, _ := shortUpload(filePath)
+		uploadLink, _ := Upload(filePath, filePathLabel, sync, myApp)
 		pagePath := pageMaker.Do(uploadLink, "image")
-		pageLink, err := shortUpload(pagePath)
+		pageLink, err := Upload(pagePath, filePathLabel, sync, myApp)
 		if err != nil {
 			dialog.ShowError(err, myWindow)
 			return
@@ -260,7 +254,7 @@ func main() {
 	makeScreen := func() {
 		filePath := saveScreen()
 		if len(filePath) > 1 {
-			_, err = shortUpload(filePath)
+			_, err = Upload(filePath, filePathLabel, sync, myApp)
 			//pagePath := pageMaker.Do(uploadLink, "image")
 			//pageLink, err := shortUpload(pagePath)
 			if err != nil {
@@ -282,7 +276,7 @@ func main() {
 		if len(url) > 1 {
 			// generate page
 		}
-		_, err := shortUpload(filePath)
+		_, err := Upload(filePath, filePathLabel, sync, myApp)
 		dialog.ShowError(err, myWindow)
 		//if makeStyledPage {
 		//	mime, err := detectMime(filePath)
