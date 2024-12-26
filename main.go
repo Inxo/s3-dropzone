@@ -56,8 +56,10 @@ func main() {
 	regionEntry := widget.NewEntry()
 	regionEntry.SetText(region)
 	idEntry := widget.NewEntry()
+	idEntry.Password = true
 	idEntry.SetText(keyId)
 	tokenEntry := widget.NewEntry()
+	tokenEntry.Password = true
 	tokenEntry.SetText(accessKey)
 	endpointEntry := widget.NewEntry()
 	endpointEntry.SetText(endpoint)
