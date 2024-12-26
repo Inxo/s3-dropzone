@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
+	"fyne.io/systray"
 	"os"
 	"strings"
 	"time"
 )
 
-func Upload(filePath string, ui *widget.Hyperlink, sync Sync, myApp fyne.App) (string, error) {
+func Upload(filePath string, ui *widget.Hyperlink, sync Sync, myApp fyne.App, tray *TrayIcon) (string, error) {
+
+	Progress(true)
+	tray.Start()
 	ui.SetText(fmt.Sprintf("Dropped file path: %s", filePath))
 
 	expireIn := os.Getenv("EXPIRE_IN")
@@ -39,5 +43,16 @@ func Upload(filePath string, ui *widget.Hyperlink, sync Sync, myApp fyne.App) (s
 		return "", err
 	}
 	ui.SetText("Download link")
+	systray.SetTitle("")
+	Progress(false)
+	tray.Stop()
 	return urlUploaded, nil
+}
+
+func Progress(state bool) {
+	if state {
+		systray.SetTitle("Uploading...")
+	} else {
+		systray.SetTitle("")
+	}
 }

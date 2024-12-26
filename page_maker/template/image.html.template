@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Video</title>
+    <title>Image</title>
 </head>
 <body>
 <img src="{{.Url}}">

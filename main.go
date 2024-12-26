@@ -29,6 +29,8 @@ func main() {
 	myApp.SetIcon(resourceIconPng)
 	wd := myApp.Storage().RootURI().String()
 
+	tray := NewTrayIcon(myApp.(desktop.App))
+
 	err := os.MkdirAll(wd, os.ModePerm)
 	if err != nil {
 		println(err)
@@ -97,6 +99,7 @@ func main() {
 	}
 
 	pageMaker := page_maker.PageMaker{}
+
 	sync := Sync{PageMaker: pageMaker}
 	err = sync.Init(bucketName, keyId, accessKey, endpoint, region)
 	if err != nil {
@@ -125,7 +128,7 @@ func main() {
 			{Text: "Region", Widget: regionEntry},
 			{Text: "Id", Widget: idEntry},
 			{Text: "Token", Widget: tokenEntry},
-			{Widget: widget.NewLabel("Shorting url service")},
+			{Widget: widget.NewLabel("Upload Settings")},
 			{Text: "Expire In", Widget: expireInEntry},
 			{Text: "Short Service", Widget: shortServiceEntry},
 		},
@@ -157,7 +160,7 @@ func main() {
 			if closer == nil {
 				return
 			}
-			_, err = Upload(closer.URI().String(), filePathLabel, sync, myApp)
+			_, err = Upload(closer.URI().String(), filePathLabel, sync, myApp, &tray)
 			//dialog.ShowInformation("File", closer.URI().String(), myWindow)
 			if err != nil {
 				dialog.ShowError(err, myWindow)
@@ -169,7 +172,8 @@ func main() {
 		}
 		fd.Show()
 	}
-	box := container.NewPadded(widget.NewButton("", openImage), image)
+	btn := widget.NewButton("", openImage)
+	box := container.NewPadded(btn, image)
 	dropContainer := container.New(
 		layout.NewVBoxLayout(),
 		container.NewHBox(
@@ -185,6 +189,7 @@ func main() {
 	// Combine forms into a tab container
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Upload", container.New(layout.NewVBoxLayout(), dropContainer)),
+		container.NewTabItem("Latest uploads", container.New(layout.NewVBoxLayout(), dropContainer)),
 		container.NewTabItem("Settings", container.New(layout.NewVBoxLayout(), form)),
 	)
 
@@ -241,9 +246,9 @@ func main() {
 			dialog.ShowError(err, myWindow)
 			return
 		}
-		uploadLink, _ := Upload(filePath, filePathLabel, sync, myApp)
+		uploadLink, _ := Upload(filePath, filePathLabel, sync, myApp, &tray)
 		pagePath := pageMaker.Do(uploadLink, "image")
-		pageLink, err := Upload(pagePath, filePathLabel, sync, myApp)
+		pageLink, err := Upload(pagePath, filePathLabel, sync, myApp, &tray)
 		if err != nil {
 			dialog.ShowError(err, myWindow)
 			return
@@ -254,7 +259,7 @@ func main() {
 	makeScreen := func() {
 		filePath := saveScreen()
 		if len(filePath) > 1 {
-			_, err = Upload(filePath, filePathLabel, sync, myApp)
+			_, err = Upload(filePath, filePathLabel, sync, myApp, &tray)
 			//pagePath := pageMaker.Do(uploadLink, "image")
 			//pageLink, err := shortUpload(pagePath)
 			if err != nil {
@@ -276,7 +281,7 @@ func main() {
 		if len(url) > 1 {
 			// generate page
 		}
-		_, err := Upload(filePath, filePathLabel, sync, myApp)
+		_, err := Upload(filePath, filePathLabel, sync, myApp, &tray)
 		dialog.ShowError(err, myWindow)
 		//if makeStyledPage {
 		//	mime, err := detectMime(filePath)
@@ -303,5 +308,6 @@ func main() {
 	myApp.Lifecycle().SetOnStarted(func() {
 		setActivationPolicy(true)
 	})
+
 	myWindow.ShowAndRun()
 }
