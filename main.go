@@ -222,16 +222,11 @@ func main() {
 
 			fileName = fmt.Sprintf("%d_%dx%d.png", i, bounds.Dx(), bounds.Dy())
 			file, _ := os.Create(exPath + "/" + fileName)
-			defer func(file *os.File) {
-				err := file.Close()
-				if err != nil {
-
-				}
-			}(file)
 			err = png.Encode(file, img)
 			if err != nil {
 				return ""
 			}
+			_ = file.Close()
 		}
 
 		myWindow.Show()
