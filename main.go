@@ -191,7 +191,7 @@ func main() {
 	// Combine forms into a tab container
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Upload", container.New(layout.NewVBoxLayout(), dropContainer)),
-		container.NewTabItem("Latest uploads", container.New(layout.NewVBoxLayout(), dropContainer)),
+		//container.NewTabItem("Latest uploads", container.New(layout.NewVBoxLayout(), dropContainer)),
 		container.NewTabItem("Settings", container.New(layout.NewVBoxLayout(), form)),
 	)
 
@@ -222,11 +222,17 @@ func main() {
 
 			fileName = fmt.Sprintf("%d_%dx%d.png", i, bounds.Dx(), bounds.Dy())
 			file, _ := os.Create(exPath + "/" + fileName)
+			defer func(file *os.File) {
+				err := file.Close()
+				if err != nil {
+
+				}
+			}(file)
 			err = png.Encode(file, img)
 			if err != nil {
 				return ""
 			}
-			_ = file.Close()
+			//_ = file.Close()
 		}
 
 		myWindow.Show()
@@ -279,7 +285,10 @@ func main() {
 			// generate page
 		}
 		_, err := Upload(filePath, filePathLabel, sync, myApp, &tray)
-		dialog.ShowError(err, myWindow)
+		if err != nil {
+			dialog.ShowError(err, myWindow)
+		}
+		//
 		//if makeStyledPage {
 		//	mime, err := detectMime(filePath)
 		//	dialog.ShowError(err, myWindow)
