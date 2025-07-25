@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"capyDrop/page_maker"
 	"fyne.io/fyne/v2/widget"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -18,6 +19,7 @@ type Sync struct {
 	Progress   *widget.ProgressBarInfinite
 	SVC        *s3.S3
 	BucketName string
+	PageMaker  page_maker.PageMaker
 }
 
 func (s *Sync) Init(bucketName string, keyId string, accessKey string, endpoint string, region string) error {

@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video</title>
+</head>
+<body>
+<video width="320" height="240" controls>
+  <source src="{{.Url}}" type="video/mp4">
+</video>
+</body>
+</html>
