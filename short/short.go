@@ -18,7 +18,7 @@ func (s Shorter) GetLink(urlUploaded string) (string, error) {
 	}
 	shorterService := s.myApp.Preferences().String("SHORT_SERVICE")
 	if len(shorterService) == 0 {
-		shorterService = "https://s.inxo.ru/shorten"
+		shorterService = "https://s.n32b.com/shorten"
 	}
 	response, err := http.PostForm(shorterService, values)
 	if err != nil {
