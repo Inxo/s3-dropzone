@@ -262,14 +262,14 @@ func main() {
 	makeScreen := func() {
 		filePath := saveScreen()
 		if len(filePath) > 1 {
-			_, err = Upload(filePath, filePathLabel, sync, myApp, &tray)
-			//pagePath := pageMaker.Do(uploadLink, "image")
-			//pageLink, err := shortUpload(pagePath)
+			uploadLink, err := Upload(filePath, filePathLabel, sync, myApp, &tray)
+			pagePath := pageMaker.Do(uploadLink, "image")
+			pageLink, err := Upload(pagePath, filePathLabel, sync, myApp, &tray)
 			if err != nil {
 				dialog.ShowError(err, myWindow)
 				return
 			}
-			//uploadLink = pageLink
+			uploadLink = pageLink
 		}
 	}
 

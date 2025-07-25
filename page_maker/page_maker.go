@@ -16,7 +16,7 @@ type Page struct {
 }
 
 func (r PageMaker) Do(link string, mime string) string {
-	if tmpl, err := template.New("video").ParseFiles("template/image.html.template"); err == nil {
+	if tmpl, err := template.New(mime).ParseFiles("template/" + mime + ".html.template"); err == nil {
 		vars := map[string]string{"url": link}
 		if err := tmpl.Execute(r.writer, vars); err != nil {
 			log.Fatal(err)
